@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight, Copy, Frame, X as XIcon, MessageCircle, Linkedin, Instagram, Link2 } from 'lucide-react';
+import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight, Copy, Frame, X as XIcon, MessageCircle, Linkedin, Instagram, Link2, ArrowUpDown, Type } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -32,14 +32,23 @@ interface HistoryItem {
   timestamp: number;
 }
 
-type FrameType = 'none' | 'brutalist' | 'polaroid' | 'gradient' | 'stamp';
+type FrameType = 'none' | 'scrapbook' | 'neon' | 'filmstrip' | 'clean';
 
 const FRAME_OPTIONS: { id: FrameType; name: string; description: string }[] = [
-  { id: 'none', name: 'No Frame', description: 'Clean, no border' },
-  { id: 'brutalist', name: 'Brutalist', description: 'Bold black border' },
-  { id: 'polaroid', name: 'Polaroid', description: 'Classic photo style' },
-  { id: 'gradient', name: 'Gradient', description: 'Colorful glow' },
-  { id: 'stamp', name: 'Stamp', description: 'Postage stamp look' },
+  { id: 'none', name: 'No Frame', description: 'No border' },
+  { id: 'scrapbook', name: 'Scrapbook', description: 'Colorful background' },
+  { id: 'neon', name: 'Neon Glow', description: 'Glowing border' },
+  { id: 'filmstrip', name: 'Film Strip', description: 'Classic film' },
+  { id: 'clean', name: 'Clean', description: 'White border' },
+];
+
+const FONT_OPTIONS = [
+  { id: 'impact', name: 'Impact', family: 'Impact, Arial Black, sans-serif' },
+  { id: 'arial', name: 'Arial Bold', family: 'Arial, Helvetica, sans-serif' },
+  { id: 'comic', name: 'Comic Sans', family: '"Comic Sans MS", cursive, sans-serif' },
+  { id: 'courier', name: 'Courier', family: '"Courier New", monospace' },
+  { id: 'georgia', name: 'Georgia', family: 'Georgia, serif' },
+  { id: 'caveat', name: 'Caveat', family: "'Caveat', cursive" },
 ];
 
 const LOADING_PHRASES = [
@@ -186,6 +195,7 @@ export default function App() {
   const [frame, setFrame] = useState<FrameType>('none');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [fontFamily, setFontFamily] = useState('Impact, Arial Black, sans-serif');
 
   const memeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -498,32 +508,45 @@ export default function App() {
     setBottomText(caption);
   };
 
+  const swapTexts = () => {
+    const temp = topText;
+    setTopText(bottomText);
+    setBottomText(temp);
+  };
+
   const getFrameClasses = (): string => {
     switch (frame) {
-      case 'brutalist': return 'border-[6px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]';
-      case 'polaroid': return 'border-[12px] border-white border-b-[48px] shadow-xl';
-      case 'gradient': return 'border-[6px] border-transparent bg-clip-padding p-1';
-      case 'stamp': return 'border-[4px] border-dashed border-black/60 p-2';
+      case 'scrapbook': return 'border-[4px] border-white shadow-lg';
+      case 'neon': return 'border-[3px] border-white/80';
+      case 'filmstrip': return 'border-x-[18px] border-y-[6px] border-black';
+      case 'clean': return 'border-[10px] border-white shadow-md';
       default: return '';
     }
   };
 
   const getFrameWrapperStyle = (): React.CSSProperties => {
-    if (frame === 'gradient') {
-      return { background: 'linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3)', padding: '6px', borderRadius: '0px' };
+    if (frame === 'scrapbook') {
+      return { background: '#FFD93D', padding: '16px', borderRadius: '0px', border: '3px dashed rgba(0,0,0,0.15)' };
     }
-    if (frame === 'polaroid') {
+    if (frame === 'neon') {
+      return { background: '#111', padding: '8px', borderRadius: '0px', boxShadow: '0 0 15px #ff6b6b, 0 0 30px #ff6b6b, inset 0 0 15px rgba(255,107,107,0.1)' };
+    }
+    if (frame === 'filmstrip') {
+      return { background: '#000', padding: '4px 0', borderRadius: '0px' };
+    }
+    if (frame === 'clean') {
       return { background: '#fff', padding: '0', borderRadius: '0px' };
     }
     return {};
   };
 
-  const textStyle = {
+  const textStyle: React.CSSProperties = {
     fontSize: `${fontSize}px`,
     color: textColor,
     WebkitTextStroke: layout === 'overlay' ? `2px ${strokeColor}` : '0px',
-    textShadow: layout === 'overlay' ? `2px 2px 0 ${strokeColor}, -2px -2px 0 ${strokeColor}, 2px -2px 0 ${strokeColor}, -2px 2px 0 ${strokeColor}` : 'none',
-    fontFamily: 'Impact, Arial Black, sans-serif',
+    paintOrder: 'stroke fill' as any,
+    textShadow: layout === 'overlay' ? `3px 3px 0 ${strokeColor}, -3px -3px 0 ${strokeColor}, 3px -3px 0 ${strokeColor}, -3px 3px 0 ${strokeColor}, 0 3px 0 ${strokeColor}, 0 -3px 0 ${strokeColor}, 3px 0 0 ${strokeColor}, -3px 0 0 ${strokeColor}` : 'none',
+    fontFamily: fontFamily,
     textAlign: textAlign,
     lineHeight: 1.2,
     whiteSpace: 'pre-wrap' as const,
@@ -748,10 +771,10 @@ export default function App() {
                           }`}
                         >
                           {f.id === 'none' && <div className="w-6 h-6 border border-dashed border-black/30" />}
-                          {f.id === 'brutalist' && <div className="w-6 h-6 border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />}
-                          {f.id === 'polaroid' && <div className="w-6 h-5 border-[2px] border-white shadow-md bg-gray-100 mb-1" style={{ borderBottom: '6px solid white' }} />}
-                          {f.id === 'gradient' && <div className="w-6 h-6 rounded-none" style={{ background: 'linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb)', padding: '2px' }}><div className="w-full h-full bg-white" /></div>}
-                          {f.id === 'stamp' && <div className="w-6 h-6 border-2 border-dashed border-black/50" />}
+                          {f.id === 'scrapbook' && <div className="w-6 h-6 bg-yellow-300 border border-dashed border-black/20 flex items-center justify-center"><div className="w-4 h-4 bg-white border border-white" /></div>}
+                          {f.id === 'neon' && <div className="w-6 h-6 bg-gray-900 border border-white/80 flex items-center justify-center" style={{ boxShadow: '0 0 4px #ff6b6b' }}><div className="w-4 h-4 bg-gray-700" /></div>}
+                          {f.id === 'filmstrip' && <div className="w-6 h-6 bg-black border-x-[3px] border-y-[1px] border-black flex items-center justify-center"><div className="w-4 h-4 bg-gray-300" /></div>}
+                          {f.id === 'clean' && <div className="w-6 h-6 bg-white border-[2px] border-white shadow-md flex items-center justify-center"><div className="w-4 h-4 bg-gray-200" /></div>}
                           <span className="truncate w-full text-center" style={{ fontSize: '9px' }}>{f.name}</span>
                         </button>
                       ))}
@@ -799,6 +822,12 @@ export default function App() {
                         onChange={(e) => setTopText(e.target.value)}
                       />
                     </div>
+                    <div className="flex justify-center">
+                      <Button variant="ghost" size="sm" onClick={swapTexts} className="gap-1 text-xs text-black/50 hover:text-primary">
+                        <ArrowUpDown className="w-3 h-3" />
+                        Swap
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="bottomText">Bottom Text</Label>
                       <Input
@@ -813,6 +842,21 @@ export default function App() {
 
                 <Card>
                   <CardContent className="pt-6 space-y-6">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2"><Type className="w-4 h-4" /> Font</Label>
+                      <Select value={fontFamily} onValueChange={setFontFamily}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FONT_OPTIONS.map((f) => (
+                            <SelectItem key={f.id} value={f.family}>
+                              <span style={{ fontFamily: f.family }}>{f.name}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label>Text Size</Label>
@@ -924,13 +968,17 @@ export default function App() {
                               <CardContent className="p-0 relative aspect-square">
                                 <img src={item.dataUrl} alt="Saved Meme" className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                                  <Button size="icon" variant="secondary" onClick={() => {
+                                  <Button size="icon" variant="secondary" onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
                                     setPreviewImage(item.dataUrl);
                                     setIsPreviewOpen(true);
                                   }}>
                                     <Eye className="w-4 h-4" />
                                   </Button>
-                                  <Button size="icon" variant="destructive" onClick={() => {
+                                  <Button size="icon" variant="destructive" onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
                                     const next = history.filter(h => h.id !== item.id);
                                     setHistory(next);
                                     localStorage.setItem('meme_history', JSON.stringify(next));
