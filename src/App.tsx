@@ -603,10 +603,10 @@ export default function App() {
                       )}
 
                       <div className="relative flex items-center justify-center">
-                        <img
-                          src={image}
-                          alt="Meme background"
-                          className="max-w-full h-auto max-h-[70vh] object-contain block"
+                        <img 
+                          src={image} 
+                          alt="User uploaded photo for meme generation" 
+                          className="w-full h-full object-contain"
                           crossOrigin="anonymous"
                         />
                         
@@ -661,8 +661,8 @@ export default function App() {
                   <CardContent className="pt-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-semibold">Image Source</Label>
-                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="w-4 h-4 mr-2" />
+                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} aria-label="Upload an image">
+                        <Upload className="w-4 h-4 mr-2" aria-hidden="true" />
                         Upload
                       </Button>
                       <input
@@ -823,8 +823,8 @@ export default function App() {
                       />
                     </div>
                     <div className="flex justify-center">
-                      <Button variant="ghost" size="sm" onClick={swapTexts} className="gap-1 text-xs text-black/50 hover:text-primary">
-                        <ArrowUpDown className="w-3 h-3" />
+                      <Button variant="ghost" size="sm" onClick={swapTexts} className="gap-1 text-xs text-black/50 hover:text-primary" aria-label="Swap top and bottom text">
+                        <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
                         Swap
                       </Button>
                     </div>
@@ -922,7 +922,7 @@ export default function App() {
                           >
                             <img
                               src={template.url}
-                              alt={template.name}
+                              alt={`Meme template: ${template.name}`}
                               className="w-full h-full object-cover"
                               crossOrigin="anonymous"
                             />
@@ -966,15 +966,15 @@ export default function App() {
                           {history.map((item) => (
                             <Card key={item.id} className="overflow-hidden group border-2 border-transparent hover:border-primary transition-all">
                               <CardContent className="p-0 relative aspect-square">
-                                <img src={item.dataUrl} alt="Saved Meme" className="w-full h-full object-cover" />
+                                <img src={item.dataUrl} alt={`Saved Meme from ${new Date(item.timestamp).toLocaleDateString()}`} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                                   <Button size="icon" variant="secondary" onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
                                     setPreviewImage(item.dataUrl);
                                     setIsPreviewOpen(true);
-                                  }}>
-                                    <Eye className="w-4 h-4" />
+                                  }} aria-label="Preview saved meme">
+                                    <Eye className="w-4 h-4" aria-hidden="true" />
                                   </Button>
                                   <Button size="icon" variant="destructive" onClick={(e) => {
                                     e.stopPropagation();
@@ -982,8 +982,8 @@ export default function App() {
                                     const next = history.filter(h => h.id !== item.id);
                                     setHistory(next);
                                     localStorage.setItem('meme_history', JSON.stringify(next));
-                                  }}>
-                                    <Trash2 className="w-4 h-4" />
+                                  }} aria-label="Delete saved meme">
+                                    <Trash2 className="w-4 h-4" aria-hidden="true" />
                                   </Button>
                                 </div>
                               </CardContent>
@@ -1065,7 +1065,7 @@ export default function App() {
           </DialogHeader>
           <div className="flex justify-center items-center bg-background p-4 rounded-none min-h-[200px] overflow-auto">
             {previewImage ? (
-              <img src={previewImage} alt="Preview" className="max-w-full max-h-[55vh] object-contain brutal-shadow" />
+              <img src={previewImage} alt="Generated Meme Preview" className="max-w-full max-h-[55vh] object-contain brutal-shadow" />
             ) : (
               <Loader2 className="w-8 h-8 animate-spin text-black" />
             )}
