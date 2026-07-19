@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight } from 'lucide-react';
+import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight, Copy, Frame, X as XIcon, MessageCircle, Linkedin, Instagram, Link2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -31,6 +31,16 @@ interface HistoryItem {
   dataUrl: string;
   timestamp: number;
 }
+
+type FrameType = 'none' | 'brutalist' | 'polaroid' | 'gradient' | 'stamp';
+
+const FRAME_OPTIONS: { id: FrameType; name: string; description: string }[] = [
+  { id: 'none', name: 'No Frame', description: 'Clean, no border' },
+  { id: 'brutalist', name: 'Brutalist', description: 'Bold black border' },
+  { id: 'polaroid', name: 'Polaroid', description: 'Classic photo style' },
+  { id: 'gradient', name: 'Gradient', description: 'Colorful glow' },
+  { id: 'stamp', name: 'Stamp', description: 'Postage stamp look' },
+];
 
 const LOADING_PHRASES = [
   "Analyzing sass levels...",
@@ -173,6 +183,9 @@ export default function App() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [frame, setFrame] = useState<FrameType>('none');
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const memeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -379,13 +392,96 @@ export default function App() {
     }
   };
 
-  const saveToDevice = () => {
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new Blob([u8arr], { type: mime });
+  };
+
+  const saveToDevice = async () => {
     if (!previewImage) return;
+    const blob = dataUrlToBlob(previewImage);
+    const file = new File([blob], 'meme-magic.png', { type: 'image/png' });
+
+    // Try Web Share API (saves to gallery on mobile)
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Meme Magic' });
+        setIsPreviewOpen(false);
+        return;
+      } catch (e) {
+        // User cancelled or error — fall through to download
+      }
+    }
+
+    // Fallback: browser download
     const link = document.createElement('a');
     link.download = 'meme-magic.png';
     link.href = previewImage;
     link.click();
     setIsPreviewOpen(false);
+  };
+
+  const shareToWhatsApp = () => {
+    if (!previewImage) return;
+    // WhatsApp doesn't support direct image sharing via URL, use Web Share API
+    const blob = dataUrlToBlob(previewImage);
+    const file = new File([blob], 'meme-magic.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Made with Make ur Meme', text: 'Check out this meme! 🔥' });
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent('Check out this meme I made! 🔥 https://meme-magic-three.vercel.app'), '_blank');
+    }
+  };
+
+  const shareToX = () => {
+    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent('Made this meme with Make ur Meme! 🔥') + '&url=' + encodeURIComponent('https://meme-magic-three.vercel.app'), '_blank');
+  };
+
+  const shareToLinkedIn = () => {
+    window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent('https://meme-magic-three.vercel.app'), '_blank');
+  };
+
+  const shareToInstagram = () => {
+    // Instagram doesn't support direct web sharing — use native share
+    if (!previewImage) return;
+    const blob = dataUrlToBlob(previewImage);
+    const file = new File([blob], 'meme-magic.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Made with Make ur Meme' });
+    } else {
+      alert('To share on Instagram: save the image first, then open Instagram and share from your gallery.');
+    }
+  };
+
+  const shareNative = async () => {
+    if (!previewImage) return;
+    const blob = dataUrlToBlob(previewImage);
+    const file = new File([blob], 'meme-magic.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Meme Magic', text: 'Check out this meme! 🔥' });
+      } catch (e) { /* cancelled */ }
+    } else {
+      alert('Native sharing is not supported on this browser. Try saving the image first.');
+    }
+  };
+
+  const copyImageToClipboard = async () => {
+    if (!previewImage) return;
+    try {
+      const blob = dataUrlToBlob(previewImage);
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ]);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (e) {
+      alert('Failed to copy image. Your browser may not support this feature.');
+    }
   };
 
   const applyCaption = (caption: string) => {
@@ -400,6 +496,26 @@ export default function App() {
     }
     setTopText('');
     setBottomText(caption);
+  };
+
+  const getFrameClasses = (): string => {
+    switch (frame) {
+      case 'brutalist': return 'border-[6px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]';
+      case 'polaroid': return 'border-[12px] border-white border-b-[48px] shadow-xl';
+      case 'gradient': return 'border-[6px] border-transparent bg-clip-padding p-1';
+      case 'stamp': return 'border-[4px] border-dashed border-black/60 p-2';
+      default: return '';
+    }
+  };
+
+  const getFrameWrapperStyle = (): React.CSSProperties => {
+    if (frame === 'gradient') {
+      return { background: 'linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3)', padding: '6px', borderRadius: '0px' };
+    }
+    if (frame === 'polaroid') {
+      return { background: '#fff', padding: '0', borderRadius: '0px' };
+    }
+    return {};
   };
 
   const textStyle = {
@@ -451,48 +567,55 @@ export default function App() {
                 </div>
               ) : (
                 <div className="relative w-full h-full flex items-center justify-center p-4 bg-primary/5 overflow-auto">
-                  <div
-                    ref={memeRef}
-                    className="relative inline-flex flex-col max-w-full brutal-shadow brutal-border"
-                    style={{ backgroundColor: layout === 'overlay' ? '#000' : '#fff' }}
-                  >
-                    {layout === 'top-pane' && (
-                      <div className="px-6 py-8 flex flex-col gap-4 w-full bg-white">
-                        {topText && <div style={textStyle} className="uppercase font-black">{topText}</div>}
-                        {bottomText && <div style={textStyle} className="uppercase font-black">{bottomText}</div>}
-                      </div>
-                    )}
+                  <div ref={memeRef} className="relative inline-flex flex-col max-w-full" style={getFrameWrapperStyle()}>
+                    <div
+                      className={`relative inline-flex flex-col max-w-full ${frame === 'none' ? 'brutal-shadow brutal-border' : getFrameClasses()}`}
+                      style={{ backgroundColor: layout === 'overlay' ? '#000' : '#fff' }}
+                    >
+                      {layout === 'top-pane' && (
+                        <div className="px-6 py-8 flex flex-col gap-4 w-full bg-white">
+                          {topText && <div style={textStyle} className="uppercase font-black">{topText}</div>}
+                          {bottomText && <div style={textStyle} className="uppercase font-black">{bottomText}</div>}
+                        </div>
+                      )}
 
-                    <div className="relative flex items-center justify-center">
-                      <img
-                        src={image}
-                        alt="Meme background"
-                        className="max-w-full h-auto max-h-[70vh] object-contain block"
-                        crossOrigin="anonymous"
-                      />
-                      
-                      {layout === 'overlay' && (
-                        <>
-                          <div
-                            className="absolute top-4 left-0 right-0 px-4 uppercase font-black pointer-events-none"
-                            style={textStyle}
-                          >
-                            {topText}
-                          </div>
-                          <div
-                            className="absolute bottom-4 left-0 right-0 px-4 uppercase font-black pointer-events-none"
-                            style={textStyle}
-                          >
-                            {bottomText}
-                          </div>
-                        </>
+                      <div className="relative flex items-center justify-center">
+                        <img
+                          src={image}
+                          alt="Meme background"
+                          className="max-w-full h-auto max-h-[70vh] object-contain block"
+                          crossOrigin="anonymous"
+                        />
+                        
+                        {layout === 'overlay' && (
+                          <>
+                            <div
+                              className="absolute top-4 left-0 right-0 px-4 uppercase font-black pointer-events-none"
+                              style={textStyle}
+                            >
+                              {topText}
+                            </div>
+                            <div
+                              className="absolute bottom-4 left-0 right-0 px-4 uppercase font-black pointer-events-none"
+                              style={textStyle}
+                            >
+                              {bottomText}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {layout === 'bottom-pane' && (
+                        <div className="px-6 py-8 flex flex-col gap-4 w-full bg-white">
+                          {topText && <div style={textStyle} className="uppercase font-black">{topText}</div>}
+                          {bottomText && <div style={textStyle} className="uppercase font-black">{bottomText}</div>}
+                        </div>
                       )}
                     </div>
-
-                    {layout === 'bottom-pane' && (
-                      <div className="px-6 py-8 flex flex-col gap-4 w-full bg-white">
-                        {topText && <div style={textStyle} className="uppercase font-black">{topText}</div>}
-                        {bottomText && <div style={textStyle} className="uppercase font-black">{bottomText}</div>}
+                    {/* Watermark for framed memes */}
+                    {frame !== 'none' && (
+                      <div className={`text-center py-1 text-[10px] font-semibold tracking-wider uppercase opacity-50 ${frame === 'polaroid' ? 'text-gray-400 bg-white pb-2' : 'text-black/40'}`} style={{ fontFamily: "'Caveat', cursive", fontSize: '13px', letterSpacing: '2px' }}>
+                        Make ur Meme
                       </div>
                     )}
                   </div>
@@ -561,6 +684,7 @@ export default function App() {
                             <SelectItem value="classic">Classic & Funny</SelectItem>
                             <SelectItem value="sarcastic">Savage & Sarcastic</SelectItem>
                             <SelectItem value="hinglish">Hinglish Savage</SelectItem>
+                            <SelectItem value="quotes">Motivational ✨</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -602,6 +726,36 @@ export default function App() {
                         </AnimatePresence>
                       </div>
                     ) : null}
+                  </CardContent>
+                </Card>
+
+                {/* Frame Options */}
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <Label className="text-base font-semibold flex items-center gap-2">
+                      <Frame className="w-4 h-4" />
+                      Frame Style
+                    </Label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {FRAME_OPTIONS.map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => setFrame(f.id)}
+                          className={`flex flex-col items-center gap-1 p-2 rounded-none border-2 transition-all text-xs font-medium ${
+                            frame === f.id
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-black/20 bg-white hover:border-black/40'
+                          }`}
+                        >
+                          {f.id === 'none' && <div className="w-6 h-6 border border-dashed border-black/30" />}
+                          {f.id === 'brutalist' && <div className="w-6 h-6 border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />}
+                          {f.id === 'polaroid' && <div className="w-6 h-5 border-[2px] border-white shadow-md bg-gray-100 mb-1" style={{ borderBottom: '6px solid white' }} />}
+                          {f.id === 'gradient' && <div className="w-6 h-6 rounded-none" style={{ background: 'linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb)', padding: '2px' }}><div className="w-full h-full bg-white" /></div>}
+                          {f.id === 'stamp' && <div className="w-6 h-6 border-2 border-dashed border-black/50" />}
+                          <span className="truncate w-full text-center" style={{ fontSize: '9px' }}>{f.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -859,17 +1013,48 @@ export default function App() {
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-4xl w-full">
           <DialogHeader>
-            <DialogTitle>Preview Meme</DialogTitle>
+            <DialogTitle>Preview & Share</DialogTitle>
           </DialogHeader>
-          <div className="flex justify-center items-center bg-background p-4 rounded-none min-h-[300px] overflow-auto">
+          <div className="flex justify-center items-center bg-background p-4 rounded-none min-h-[200px] overflow-auto">
             {previewImage ? (
-              <img src={previewImage} alt="Preview" className="max-w-full max-h-[70vh] object-contain brutal-shadow" />
+              <img src={previewImage} alt="Preview" className="max-w-full max-h-[55vh] object-contain brutal-shadow" />
             ) : (
               <Loader2 className="w-8 h-8 animate-spin text-black" />
             )}
           </div>
+
+          {/* Share Options */}
+          <div className="border-t border-black/10 pt-4 mt-2">
+            <p className="text-sm font-semibold mb-3 text-black/70">Share to</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={shareToWhatsApp} className="gap-2 border-green-500 text-green-600 hover:bg-green-50">
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp
+              </Button>
+              <Button variant="outline" size="sm" onClick={shareToInstagram} className="gap-2 border-pink-500 text-pink-600 hover:bg-pink-50">
+                <Instagram className="w-4 h-4" />
+                Instagram
+              </Button>
+              <Button variant="outline" size="sm" onClick={shareToX} className="gap-2 border-black text-black hover:bg-gray-100">
+                <XIcon className="w-4 h-4" />
+                X (Twitter)
+              </Button>
+              <Button variant="outline" size="sm" onClick={shareToLinkedIn} className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50">
+                <Linkedin className="w-4 h-4" />
+                LinkedIn
+              </Button>
+              <Button variant="outline" size="sm" onClick={shareNative} className="gap-2">
+                <Share2 className="w-4 h-4" />
+                More...
+              </Button>
+              <Button variant="outline" size="sm" onClick={copyImageToClipboard} className={`gap-2 transition-all ${copySuccess ? 'border-green-500 text-green-600 bg-green-50' : ''}`}>
+                {copySuccess ? <span>✓ Copied!</span> : <><Copy className="w-4 h-4" /> Copy Image</>}
+              </Button>
+            </div>
+          </div>
+
           <DialogFooter className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Close</Button>
             <Button onClick={saveToDevice}>
               <Download className="w-4 h-4 mr-2" />
               Save to Device

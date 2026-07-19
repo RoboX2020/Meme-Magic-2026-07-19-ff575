@@ -68,6 +68,8 @@ async function startServer() {
         prompt = "Analyze this image and suggest 5 extremely sarcastic, savage, and funny meme captions. You can use mild curse words in a humorous, non-hurtful way. Be edgy but hilarious.";
       } else if (captionStyle === "hinglish") {
         prompt = "Analyze this image and suggest 5 extremely funny and sarcastic meme captions in Hinglish (Hindi language written in English alphabet). You can use mild Hindi slang/curse words in a humorous, non-hurtful way.";
+      } else if (captionStyle === "quotes") {
+        prompt = "Analyze this image and suggest 5 deep, motivational, or inspirational quotes that fit the mood and vibe of this image. They should feel poetic, philosophical, or empowering — like something you'd see on an Instagram story or motivational post. Make them original.";
       }
       
       if (captionLength === "short") {
