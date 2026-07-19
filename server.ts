@@ -2,15 +2,15 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
+import OpenAI from "openai";
 
 // Overwrite process.env with values from .dev.env.json if it exists
 try {
   const devEnvPath = path.join(process.cwd(), "..", ".dev.env.json");
   if (fs.existsSync(devEnvPath)) {
     const devEnv = JSON.parse(fs.readFileSync(devEnvPath, "utf-8"));
-    if (devEnv.GEMINI_API_KEY) {
-      process.env.GEMINI_API_KEY = devEnv.GEMINI_API_KEY;
+    if (devEnv.OPENAI_API_KEY) {
+      process.env.OPENAI_API_KEY = devEnv.OPENAI_API_KEY;
     }
   }
 } catch (e) {
@@ -19,13 +19,13 @@ try {
 
 // Fallback to .env in same directory if still placeholder
 try {
-  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "MY_OPENAI_API_KEY") {
     const envPath = path.join(process.cwd(), ".env");
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, "utf-8");
-      const match = envContent.match(/^GEMINI_API_KEY=(.*)$/m);
+      const match = envContent.match(/^OPENAI_API_KEY=(.*)$/m);
       if (match) {
-        process.env.GEMINI_API_KEY = match[1].trim();
+        process.env.OPENAI_API_KEY = match[1].trim();
       }
     }
   }
@@ -44,14 +44,12 @@ async function startServer() {
     try {
       const { base64Data, mimeType, captionStyle, captionLength } = req.body;
 
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
-        return res.status(500).json({ error: `Invalid Gemini API Key. Please configure a valid key in your project settings.` });
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey || apiKey === "MY_OPENAI_API_KEY") {
+        return res.status(500).json({ error: `Invalid OpenAI API Key. Please configure a valid key.` });
       }
 
-      const requestAi = new GoogleGenAI({ 
-        apiKey
-      });
+      const openai = new OpenAI({ apiKey });
 
       if (!base64Data || !mimeType) {
         return res.status(400).json({ error: "Image data is required" });
@@ -78,39 +76,34 @@ async function startServer() {
         prompt += " The captions can be a normal sentence length.";
       }
       
-      prompt += " Return ONLY a JSON array of strings.";
+      prompt += " Please respond with a JSON object containing a 'captions' array of strings.";
 
-      const response = await requestAi.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: cleanBase64,
-                mimeType: mimeType,
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${cleanBase64}`,
+                },
               },
-            },
-            {
-              text: prompt,
-            }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "A list of meme captions.",
+            ],
           },
-        },
+        ],
       });
 
-      if (!response.text) {
+      const responseText = response.choices[0]?.message?.content;
+      if (!responseText) {
         throw new Error("No response returned from AI.");
       }
 
-      const cleanText = response.text.replace(/^```(json)?\n?/i, "").replace(/\n?```$/i, "").trim();
-      const parsedCaptions = JSON.parse(cleanText);
+      const parsedData = JSON.parse(responseText);
+      const parsedCaptions = parsedData.captions || [];
 
       res.json({ captions: parsedCaptions });
     } catch (error: any) {
@@ -119,14 +112,14 @@ async function startServer() {
       
       try {
         const parsedNode = JSON.parse(error.message);
-        if (parsedNode.error?.message?.includes("API key not valid")) {
-          errorMessage = "Your Gemini API Key is invalid. Please update it in Project Settings.";
+        if (parsedNode.error?.message?.includes("Incorrect API key")) {
+          errorMessage = "Your OpenAI API Key is invalid.";
         } else if (parsedNode.error?.message) {
           errorMessage = parsedNode.error.message;
         }
       } catch (e) {
-        if (errorMessage.includes("API_KEY_INVALID")) {
-          errorMessage = "Your Gemini API Key is invalid. Please update it in Project Settings.";
+        if (errorMessage.includes("Incorrect API key")) {
+          errorMessage = "Your OpenAI API Key is invalid.";
         }
       }
 
