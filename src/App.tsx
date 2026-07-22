@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight, Copy, Frame, X as XIcon, MessageCircle, Linkedin, Instagram, Link2, ArrowUpDown, Type } from 'lucide-react';
+import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight, Copy, Frame, X as XIcon, MessageCircle, Linkedin, Instagram, Link2, ArrowUpDown, Type, Megaphone } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -196,6 +196,7 @@ export default function App() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [fontFamily, setFontFamily] = useState('Impact, Arial Black, sans-serif');
+  const [supportivePrompt, setSupportivePrompt] = useState('');
 
   const memeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -340,7 +341,8 @@ export default function App() {
           base64Data,
           mimeType: base64Data.startsWith('data:image/jpeg') ? 'image/jpeg' : mimeType,
           captionStyle,
-          captionLength
+          captionLength,
+          supportivePrompt: supportivePrompt.trim() || undefined
         }),
       });
 
@@ -635,6 +637,20 @@ export default function App() {
                         </div>
                       )}
                     </div>
+                    {/* Permanent Watermark — always visible */}
+                    <div
+                      className="absolute bottom-2 right-2 z-20 pointer-events-none select-none"
+                      style={{
+                        fontFamily: "'Caveat', cursive",
+                        fontSize: '11px',
+                        color: 'rgba(255,255,255,0.6)',
+                        textShadow: '1px 1px 2px rgba(0,0,0,0.7)',
+                        letterSpacing: '1px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      makeurmeme.online
+                    </div>
                     {/* Watermark for framed memes */}
                     {frame !== 'none' && (
                       <div className={`text-center py-1 text-[10px] font-semibold tracking-wider uppercase opacity-50 ${frame === 'polaroid' ? 'text-gray-400 bg-white pb-2' : 'text-black/40'}`} style={{ fontFamily: "'Caveat', cursive", fontSize: '13px', letterSpacing: '2px' }}>
@@ -708,6 +724,7 @@ export default function App() {
                             <SelectItem value="sarcastic">Savage & Sarcastic</SelectItem>
                             <SelectItem value="hinglish">Hinglish Savage</SelectItem>
                             <SelectItem value="quotes">Motivational ✨</SelectItem>
+                            <SelectItem value="advertisement"><Megaphone className="w-3 h-3 inline mr-1" />Advertisement 📢</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -723,6 +740,28 @@ export default function App() {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+
+                    {/* Supportive Prompt */}
+                    <div className="space-y-2 mt-3">
+                      <Label className="text-xs text-black font-medium flex items-center gap-1">
+                        {captionStyle === 'advertisement' ? '📢 Brand / Offer Details' : '💡 Hint / Direction (Optional)'}
+                      </Label>
+                      <Input
+                        placeholder={captionStyle === 'advertisement'
+                          ? 'e.g. Nike — 50% off all shoes this weekend!'
+                          : 'e.g. Make it about Mondays, office life...'
+                        }
+                        value={supportivePrompt}
+                        onChange={(e) => setSupportivePrompt(e.target.value)}
+                        className="bg-white text-sm"
+                      />
+                      <p className="text-[10px] text-black/50">
+                        {captionStyle === 'advertisement'
+                          ? 'Enter the brand name, product details, and offer. AI will craft an attention-grabbing ad meme.'
+                          : 'Give the AI a nudge — topic, mood, or inside joke to guide the caption direction.'
+                        }
+                      </p>
                     </div>
 
                     {isGenerating ? (

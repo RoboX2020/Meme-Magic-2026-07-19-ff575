@@ -42,7 +42,7 @@ async function startServer() {
   // API Routes MUST be defined BEFORE Vite middleware
   app.post("/api/generate-captions", async (req, res) => {
     try {
-      const { base64Data, mimeType, captionStyle, captionLength } = req.body;
+      const { base64Data, mimeType, captionStyle, captionLength, supportivePrompt } = req.body;
 
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey || apiKey === "MY_OPENAI_API_KEY") {
@@ -70,6 +70,16 @@ async function startServer() {
         prompt = "Analyze this image and suggest 5 extremely funny and sarcastic meme captions in Hinglish (Hindi language written in English alphabet). You can use mild Hindi slang/curse words in a humorous, non-hurtful way.";
       } else if (captionStyle === "quotes") {
         prompt = "Analyze this image and suggest 5 deep, motivational, or inspirational quotes that fit the mood and vibe of this image. They should feel poetic, philosophical, or empowering — like something you'd see on an Instagram story or motivational post. Make them original.";
+      } else if (captionStyle === "advertisement") {
+        prompt = "You are a creative advertising copywriter. Analyze this image and create 5 catchy, attention-grabbing advertisement captions that would work as meme-style ads. The captions should be witty, memorable, and make people stop scrolling. Think viral marketing — blend humor with a compelling call to action.";
+        if (supportivePrompt) {
+          prompt += ` The brand/product details are: "${supportivePrompt}". Use these details to craft the ad captions — mention the brand name, highlight the offer or product, and make it feel native to the image context. The captions should feel like organic meme content, not forced ads.`;
+        }
+      }
+
+      // Append supportive prompt for non-advertisement styles
+      if (supportivePrompt && captionStyle !== "advertisement") {
+        prompt += ` The user wants the captions to be about or related to: "${supportivePrompt}". Incorporate this direction/hint into the captions while keeping them funny and relevant to the image.`;
       }
       
       if (captionLength === "short") {
