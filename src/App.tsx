@@ -342,7 +342,7 @@ export default function App() {
           mimeType: base64Data.startsWith('data:image/jpeg') ? 'image/jpeg' : mimeType,
           captionStyle,
           captionLength,
-          supportivePrompt: supportivePrompt.trim() || undefined
+          supportivePrompt: supportivePrompt.trim()
         }),
       });
 

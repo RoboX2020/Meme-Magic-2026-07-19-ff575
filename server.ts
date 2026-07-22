@@ -73,13 +73,13 @@ async function startServer() {
       } else if (captionStyle === "advertisement") {
         prompt = "You are a creative advertising copywriter. Analyze this image and create 5 catchy, attention-grabbing advertisement captions that would work as meme-style ads. The captions should be witty, memorable, and make people stop scrolling. Think viral marketing — blend humor with a compelling call to action.";
         if (supportivePrompt) {
-          prompt += ` The brand/product details are: "${supportivePrompt}". Use these details to craft the ad captions — mention the brand name, highlight the offer or product, and make it feel native to the image context. The captions should feel like organic meme content, not forced ads.`;
+          prompt += `\n\n**MANDATORY REQUIREMENT — YOU MUST FOLLOW THIS:**\nThe brand/product/offer details are: "${supportivePrompt}"\nYou MUST incorporate these exact details into EVERY single caption. Mention the brand name explicitly, reference the offer/product directly, and tie it naturally to the image. Do NOT generate generic captions — every caption MUST be about this specific brand/offer.`;
         }
       }
 
       // Append supportive prompt for non-advertisement styles
       if (supportivePrompt && captionStyle !== "advertisement") {
-        prompt += ` The user wants the captions to be about or related to: "${supportivePrompt}". Incorporate this direction/hint into the captions while keeping them funny and relevant to the image.`;
+        prompt += `\n\n**MANDATORY REQUIREMENT — YOU MUST FOLLOW THIS:**\nThe user specifically wants the captions to be about: "${supportivePrompt}"\nYou MUST make ALL 5 captions directly related to this topic/direction. This is NOT optional. Every caption must clearly reference or revolve around "${supportivePrompt}" while staying relevant to the image. Do NOT ignore this direction.`;
       }
       
       if (captionLength === "short") {
