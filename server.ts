@@ -75,6 +75,10 @@ async function startServer() {
         systemPrompt = "You are a creative advertising copywriter who makes viral meme-style ads. You blend humor with compelling calls to action. Your captions are witty, memorable, and make people stop scrolling.";
       }
 
+      if (supportivePrompt) {
+        systemPrompt += `\n\nCRITICAL DIRECTIVE: The user has provided specific direction/details: "${supportivePrompt}".\nYou MUST incorporate this into your captions. Before writing the captions, you must write a 'thought_process' explaining exactly how you will weave "${supportivePrompt}" into the memes.`;
+      }
+
       // --- Build user message (the task + length) ---
       let taskPrompt = "Analyze this image and suggest 5 meme captions.";
       if (captionLength === "short") {
@@ -82,41 +86,26 @@ async function startServer() {
       } else {
         taskPrompt += " Normal sentence length is fine.";
       }
-      taskPrompt += " Respond with a JSON object containing a 'captions' array of strings.";
+      taskPrompt += " Respond with a JSON object containing a 'thought_process' string (explaining how you incorporated the user's direction) and a 'captions' array of exactly 5 strings.";
 
       // --- Build messages array ---
       const messages: any[] = [
         { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: taskPrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${cleanBase64}`,
+              },
+            },
+          ],
+        },
       ];
 
-      // If supportive prompt exists, add it as a dedicated user message BEFORE the image
-      // so the model processes it as a firm directive before seeing the image
-      if (supportivePrompt) {
-        let directionMsg = "";
-        if (captionStyle === "advertisement") {
-          directionMsg = `IMPORTANT CONTEXT: The brand/product/offer for this ad is: "${supportivePrompt}". Every single caption you write MUST mention this brand/product and incorporate these details. Do not write generic captions.`;
-        } else {
-          directionMsg = `IMPORTANT CONTEXT: The user wants all captions to be specifically about: "${supportivePrompt}". Every caption must revolve around this topic while being relevant to the image.`;
-        }
-        messages.push({ role: "user", content: directionMsg });
-        messages.push({ role: "assistant", content: `Understood! I will make all 5 captions specifically about "${supportivePrompt}". Show me the image.` });
-      }
-
-      // Add the image + task as the final user message
-      messages.push({
-        role: "user",
-        content: [
-          { type: "text", text: taskPrompt },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:${mimeType};base64,${cleanBase64}`,
-            },
-          },
-        ],
-      });
-
-      console.log("Prompt architecture:", { captionStyle, supportivePrompt, messageCount: messages.length });
+      console.log("Prompt architecture (Chain of Thought):", { captionStyle, supportivePrompt });
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
