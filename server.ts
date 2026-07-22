@@ -63,23 +63,25 @@ async function startServer() {
         cleanBase64 += '=';
       }
 
-      let prompt = "Analyze this image and suggest 5 funny, relevant meme captions.";
-      if (captionStyle === "sarcastic") {
-        prompt = "Analyze this image and suggest 5 extremely sarcastic, savage, and funny meme captions. You can use mild curse words in a humorous, non-hurtful way. Be edgy but hilarious.";
-      } else if (captionStyle === "hinglish") {
-        prompt = "Analyze this image and suggest 5 extremely funny and sarcastic meme captions in Hinglish (Hindi language written in English alphabet). You can use mild Hindi slang/curse words in a humorous, non-hurtful way.";
-      } else if (captionStyle === "quotes") {
-        prompt = "Analyze this image and suggest 5 deep, motivational, or inspirational quotes that fit the mood and vibe of this image. They should feel poetic, philosophical, or empowering — like something you'd see on an Instagram story or motivational post. Make them original.";
-      } else if (captionStyle === "advertisement") {
-        prompt = "You are a creative advertising copywriter. Analyze this image and create 5 catchy, attention-grabbing advertisement captions that would work as meme-style ads. The captions should be witty, memorable, and make people stop scrolling. Think viral marketing — blend humor with a compelling call to action.";
-        if (supportivePrompt) {
-          prompt += `\n\n**MANDATORY REQUIREMENT — YOU MUST FOLLOW THIS:**\nThe brand/product/offer details are: "${supportivePrompt}"\nYou MUST incorporate these exact details into EVERY single caption. Mention the brand name explicitly, reference the offer/product directly, and tie it naturally to the image. Do NOT generate generic captions — every caption MUST be about this specific brand/offer.`;
-        }
-      }
+      // Build the user's direction inline — empty string if nothing entered
+      const direction = supportivePrompt
+        ? ` The captions must be specifically about: "${supportivePrompt}".`
+        : "";
 
-      // Append supportive prompt for non-advertisement styles
-      if (supportivePrompt && captionStyle !== "advertisement") {
-        prompt += `\n\n**MANDATORY REQUIREMENT — YOU MUST FOLLOW THIS:**\nThe user specifically wants the captions to be about: "${supportivePrompt}"\nYou MUST make ALL 5 captions directly related to this topic/direction. This is NOT optional. Every caption must clearly reference or revolve around "${supportivePrompt}" while staying relevant to the image. Do NOT ignore this direction.`;
+      let prompt = "";
+      if (captionStyle === "sarcastic") {
+        prompt = `Analyze this image and suggest 5 extremely sarcastic, savage, and funny meme captions.${direction} You can use mild curse words in a humorous, non-hurtful way. Be edgy but hilarious.`;
+      } else if (captionStyle === "hinglish") {
+        prompt = `Analyze this image and suggest 5 extremely funny and sarcastic meme captions in Hinglish (Hindi language written in English alphabet).${direction} You can use mild Hindi slang/curse words in a humorous, non-hurtful way.`;
+      } else if (captionStyle === "quotes") {
+        prompt = `Analyze this image and suggest 5 deep, motivational, or inspirational quotes that fit the mood and vibe of this image.${direction} They should feel poetic, philosophical, or empowering — like something you'd see on an Instagram story or motivational post. Make them original.`;
+      } else if (captionStyle === "advertisement") {
+        const brandDirection = supportivePrompt
+          ? ` The brand/product/offer is: "${supportivePrompt}". You must mention this brand and its details in every caption.`
+          : "";
+        prompt = `You are a creative advertising copywriter. Analyze this image and create 5 catchy, attention-grabbing advertisement captions that would work as meme-style ads.${brandDirection} The captions should be witty, memorable, and make people stop scrolling. Think viral marketing — blend humor with a compelling call to action.`;
+      } else {
+        prompt = `Analyze this image and suggest 5 funny, relevant meme captions.${direction}`;
       }
       
       if (captionLength === "short") {
