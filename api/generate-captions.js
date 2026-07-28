@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { base64Data, mimeType, captionStyle, captionLength } = req.body;
+    const { base64Data, mimeType, captionStyle, captionLength, supportivePrompt, advertisementDetails } = req.body;
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -31,46 +31,73 @@ export default async function handler(req, res) {
       cleanBase64 += "=";
     }
 
-    let prompt =
-      "Analyze this image and suggest 5 funny, relevant meme captions.";
+    // --- Build system message (sets the vibe/role) ---
+    let systemPrompt = "You are a meme caption generator. You analyze images and write meme captions.";
     if (captionStyle === "sarcastic") {
-      prompt =
-        "Analyze this image and suggest 5 extremely sarcastic, savage, and funny meme captions. You can use mild curse words in a humorous, non-hurtful way. Be edgy but hilarious.";
+      systemPrompt = "You are a savage, sarcastic meme caption generator. You write extremely sarcastic, edgy, and hilarious meme captions. You can use mild curse words in a humorous, non-hurtful way.";
     } else if (captionStyle === "hinglish") {
-      prompt =
-        "Analyze this image and suggest 5 extremely funny and sarcastic meme captions in Hinglish (Hindi language written in English alphabet). You can use mild Hindi slang/curse words in a humorous, non-hurtful way.";
+      systemPrompt = "You are a Hinglish meme caption generator. You write extremely funny and sarcastic meme captions in Hinglish (Hindi language written in English alphabet). You can use mild Hindi slang/curse words in a humorous, non-hurtful way.";
     } else if (captionStyle === "quotes") {
-      prompt =
-        "Analyze this image and suggest 5 deep, motivational, or inspirational quotes that fit the mood and vibe of this image. They should feel poetic, philosophical, or empowering — like something you'd see on an Instagram story or motivational post. Make them original.";
+      systemPrompt = "You are a motivational quotes writer. You write deep, poetic, philosophical, or empowering quotes that fit the mood of images — like something you'd see on an Instagram story. Make them original.";
+    } else if (captionStyle === "advertisement") {
+      // Build one unified advertisement prompt with structured brand details baked in
+      const brandParts = [];
+      if (advertisementDetails?.brandName) brandParts.push(`Brand/Product: "${advertisementDetails.brandName}"`);
+      if (advertisementDetails?.offer) brandParts.push(`Offer: "${advertisementDetails.offer}"`);
+      if (advertisementDetails?.speciality) brandParts.push(`Key Feature: "${advertisementDetails.speciality}"`);
+
+      if (brandParts.length > 0) {
+        systemPrompt = `You are a creative advertising copywriter who makes viral meme-style ads.
+
+THE ADVERTISEMENT IS FOR:
+${brandParts.join("\n")}
+
+ABSOLUTE RULES:
+1. Every single caption MUST explicitly mention "${advertisementDetails?.brandName || advertisementDetails?.offer || advertisementDetails?.speciality}" by name.
+2. Every caption must reference the offer or speciality if provided.
+3. Blend humor with a compelling call-to-action.
+4. Make captions witty, viral, and attention-grabbing.
+5. Do NOT write generic captions. Every caption must be a specific ad for this brand.`;
+      } else {
+        systemPrompt = "You are a creative advertising copywriter who makes viral meme-style ads. You blend humor with compelling calls to action. Your captions are witty, memorable, and make people stop scrolling.";
+      }
     }
 
+    // Supportive prompt for non-advertisement vibes
+    if (supportivePrompt && captionStyle !== "advertisement") {
+      systemPrompt += `\n\nCRITICAL DIRECTIVE: The user wants the captions to be about "${supportivePrompt}". You MUST make ALL 5 captions directly related to "${supportivePrompt}". This is NOT optional.`;
+    }
+
+    // --- Build user message (the task + length) ---
+    let taskPrompt = "Analyze this image and suggest 5 meme captions.";
     if (captionLength === "short") {
-      prompt +=
-        " Keep the captions EXTREMELY short, punchy, and savage (maximum 2 to 5 words).";
+      taskPrompt += " Keep them EXTREMELY short and punchy (2 to 5 words max).";
     } else {
-      prompt += " The captions can be a normal sentence length.";
+      taskPrompt += " Normal sentence length is fine.";
     }
+    taskPrompt += " Respond with a JSON object containing a 'captions' array of exactly 5 strings.";
 
-    prompt +=
-      " Please respond with a JSON object containing a 'captions' array of strings.";
+    // --- Build messages array with system + user separation ---
+    const messages = [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: taskPrompt },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${cleanBase64}`,
+            },
+          },
+        ],
+      },
+    ];
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${cleanBase64}`,
-              },
-            },
-          ],
-        },
-      ],
+      messages,
     });
 
     const responseText = response.choices[0]?.message?.content;
