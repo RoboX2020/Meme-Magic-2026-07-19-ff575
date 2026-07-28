@@ -197,6 +197,11 @@ export default function App() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [fontFamily, setFontFamily] = useState('Impact, Arial Black, sans-serif');
   const [supportivePrompt, setSupportivePrompt] = useState('');
+  
+  // Structured Advertisement Details
+  const [brandName, setBrandName] = useState('');
+  const [offer, setOffer] = useState('');
+  const [speciality, setSpeciality] = useState('');
 
   const memeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -342,7 +347,12 @@ export default function App() {
           mimeType: base64Data.startsWith('data:image/jpeg') ? 'image/jpeg' : mimeType,
           captionStyle,
           captionLength,
-          supportivePrompt: supportivePrompt.trim()
+          supportivePrompt: supportivePrompt.trim(),
+          advertisementDetails: captionStyle === 'advertisement' ? {
+            brandName: brandName.trim(),
+            offer: offer.trim(),
+            speciality: speciality.trim()
+          } : undefined
         }),
       });
 
@@ -742,27 +752,62 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Supportive Prompt */}
-                    <div className="space-y-2 mt-3">
-                      <Label className="text-xs text-black font-medium flex items-center gap-1">
-                        {captionStyle === 'advertisement' ? '📢 Brand / Offer Details' : '💡 Hint / Direction (Optional)'}
-                      </Label>
-                      <Input
-                        placeholder={captionStyle === 'advertisement'
-                          ? 'e.g. Nike — 50% off all shoes this weekend!'
-                          : 'e.g. Make it about Mondays, office life...'
-                        }
-                        value={supportivePrompt}
-                        onChange={(e) => setSupportivePrompt(e.target.value)}
-                        className="bg-white text-sm"
-                      />
-                      <p className="text-[10px] text-black/50">
-                        {captionStyle === 'advertisement'
-                          ? 'Enter the brand name, product details, and offer. AI will craft an attention-grabbing ad meme.'
-                          : 'Give the AI a nudge — topic, mood, or inside joke to guide the caption direction.'
-                        }
-                      </p>
-                    </div>
+                    {/* Supportive Prompt / Advertisement Details */}
+                    {captionStyle === 'advertisement' ? (
+                      <div className="space-y-3 mt-3 p-3 bg-gray-50 border border-gray-200 rounded-none">
+                        <Label className="text-xs text-black font-semibold flex items-center gap-1 mb-2">
+                          <Megaphone className="w-3 h-3" /> Advertisement Details
+                        </Label>
+                        
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-black font-medium">Brand / Product Name</Label>
+                          <Input
+                            placeholder="e.g. Nike, Apple, or 'My Cool App'"
+                            value={brandName}
+                            onChange={(e) => setBrandName(e.target.value)}
+                            className="bg-white h-7 text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-black font-medium">Offer / Discount (Optional)</Label>
+                          <Input
+                            placeholder="e.g. 50% Off, Buy 1 Get 1 Free"
+                            value={offer}
+                            onChange={(e) => setOffer(e.target.value)}
+                            className="bg-white h-7 text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-black font-medium">Speciality / Vibe (Optional)</Label>
+                          <Input
+                            placeholder="e.g. Super lightweight, best for coding"
+                            value={speciality}
+                            onChange={(e) => setSpeciality(e.target.value)}
+                            className="bg-white h-7 text-xs"
+                          />
+                        </div>
+                        <p className="text-[9px] text-black/50 leading-tight">
+                          These details will be woven directly into the meme caption to create a viral ad.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 mt-3">
+                        <Label className="text-xs text-black font-medium flex items-center gap-1">
+                          💡 Hint / Direction (Optional)
+                        </Label>
+                        <Input
+                          placeholder="e.g. Make it about Mondays, office life..."
+                          value={supportivePrompt}
+                          onChange={(e) => setSupportivePrompt(e.target.value)}
+                          className="bg-white text-sm"
+                        />
+                        <p className="text-[10px] text-black/50">
+                          Give the AI a nudge — topic, mood, or inside joke to guide the caption direction.
+                        </p>
+                      </div>
+                    )}
 
                     {isGenerating ? (
                       <div className="mt-4">

@@ -42,7 +42,7 @@ async function startServer() {
   // API Routes MUST be defined BEFORE Vite middleware
   app.post("/api/generate-captions", async (req, res) => {
     try {
-      const { base64Data, mimeType, captionStyle, captionLength, supportivePrompt } = req.body;
+      const { base64Data, mimeType, captionStyle, captionLength, supportivePrompt, advertisementDetails } = req.body;
 
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey || apiKey === "MY_OPENAI_API_KEY") {
@@ -73,9 +73,17 @@ async function startServer() {
         systemPrompt = "You are a motivational quotes writer. You write deep, poetic, philosophical, or empowering quotes that fit the mood of images — like something you'd see on an Instagram story. Make them original.";
       } else if (captionStyle === "advertisement") {
         systemPrompt = "You are a creative advertising copywriter who makes viral meme-style ads. You blend humor with compelling calls to action. Your captions are witty, memorable, and make people stop scrolling.";
+        
+        if (advertisementDetails && (advertisementDetails.brandName || advertisementDetails.offer || advertisementDetails.speciality)) {
+          systemPrompt += `\n\nCRITICAL DIRECTIVE: You MUST create the advertisement meme captions specifically for the following brand details:\n`;
+          if (advertisementDetails.brandName) systemPrompt += `- Brand / Product Name: ${advertisementDetails.brandName}\n`;
+          if (advertisementDetails.offer) systemPrompt += `- Offer / Discount: ${advertisementDetails.offer}\n`;
+          if (advertisementDetails.speciality) systemPrompt += `- Speciality / Key Feature: ${advertisementDetails.speciality}\n`;
+          systemPrompt += `\nYou MUST explicitly weave these exact details into EVERY single caption. Do not write generic captions. Before writing the captions, you must write a 'thought_process' explaining exactly how you will integrate these brand details into the memes.`;
+        }
       }
 
-      if (supportivePrompt) {
+      if (supportivePrompt && captionStyle !== "advertisement") {
         systemPrompt += `\n\nCRITICAL DIRECTIVE: The user has provided specific direction/details: "${supportivePrompt}".\nYou MUST incorporate this into your captions. Before writing the captions, you must write a 'thought_process' explaining exactly how you will weave "${supportivePrompt}" into the memes.`;
       }
 
