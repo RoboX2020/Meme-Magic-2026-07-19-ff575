@@ -259,6 +259,8 @@ export default function App() {
              nextHistory = [newItem, ...nextHistory].slice(0, 15);
           }
           
+          // Keep at most 15 memes in browser storage; if it's full, drop the oldest
+          // until the save fits.
           while (nextHistory.length > 0) {
             try {
               localStorage.setItem('meme_history', JSON.stringify(nextHistory));
@@ -320,6 +322,7 @@ export default function App() {
       
       // Compress the image before sending to Gemini
       try {
+        // Shrink big photos to 800px before uploading: smaller, faster, cheaper.
         const img = new Image();
         img.src = image;
         await new Promise((resolve, reject) => {
@@ -375,6 +378,7 @@ export default function App() {
         }),
       });
 
+      // Surface the server's real error message when it gives one.
       if (!res.ok) {
         let errMessage = 'Failed to fetch from server';
         try {
