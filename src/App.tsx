@@ -73,6 +73,7 @@ const LOADING_PHRASES = [
   "Generating peak comedy...",
 ];
 
+// The 'magic is happening' animation shown while captions generate.
 function LoadingState() {
   const [index, setIndex] = useState(0);
 
@@ -139,6 +140,7 @@ function LoadingState() {
   );
 }
 
+// The draggable slider for caption text size.
 function TextSizeBar({ value, onChange }: { value: number, onChange: (val: number) => void }) {
   const min = 10;
   const max = 150;
@@ -275,6 +277,7 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [image, topText, bottomText, layout, textAlign, fontSize, textColor, strokeColor, captions]);
 
+  // The user picked a photo: read it into the editor.
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -288,6 +291,7 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  // Load a ready-made meme template image.
   const loadTemplate = async (url: string) => {
     try {
       const res = await fetch(url);
@@ -305,6 +309,7 @@ export default function App() {
     }
   };
 
+  // The magic button: send the image to the AI and get back funny captions.
   const generateMagicCaptions = async () => {
     if (!image) return;
     setIsGenerating(true);
@@ -398,6 +403,7 @@ export default function App() {
   // the user can download or share, and file a copy in the history reel.
   // (Two history snapshots within 2 minutes merge into one, so dragging a
   // slider doesn't flood the reel.)
+  // Render the final meme (image + text) onto a canvas so it can be saved.
   const handlePreview = async () => {
     if (!memeRef.current) return;
     setIsDownloading(true);
@@ -432,6 +438,7 @@ export default function App() {
     }
   };
 
+  // Convert the canvas's data URL into a real file (Blob) for saving/sharing.
   const dataUrlToBlob = (dataUrl: string): Blob => {
     const arr = dataUrl.split(',');
     const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
@@ -441,6 +448,7 @@ export default function App() {
     return new Blob([u8arr], { type: mime });
   };
 
+  // Download the finished meme.
   const saveToDevice = async () => {
     if (!previewImage) return;
     const blob = dataUrlToBlob(previewImage);
@@ -465,6 +473,7 @@ export default function App() {
     setIsPreviewOpen(false);
   };
 
+  // Open WhatsApp's share dialog with the meme.
   const shareToWhatsApp = () => {
     if (!previewImage) return;
     // WhatsApp doesn't support direct image sharing via URL, use Web Share API
@@ -497,6 +506,7 @@ export default function App() {
     }
   };
 
+  // Use the phone's built-in share sheet when available.
   const shareNative = async () => {
     if (!previewImage) return;
     const blob = dataUrlToBlob(previewImage);
@@ -510,6 +520,7 @@ export default function App() {
     }
   };
 
+  // Copy the meme image itself to the clipboard.
   const copyImageToClipboard = async () => {
     if (!previewImage) return;
     try {
@@ -524,6 +535,7 @@ export default function App() {
     }
   };
 
+  // Put the chosen caption onto the meme (splits into top/bottom text).
   const applyCaption = (caption: string) => {
     if (caption.length > 30 && caption.includes(' ')) {
       const middle = Math.floor(caption.length / 2);
@@ -538,12 +550,14 @@ export default function App() {
     setBottomText(caption);
   };
 
+  // Swap the top and bottom captions.
   const swapTexts = () => {
     const temp = topText;
     setTopText(bottomText);
     setBottomText(temp);
   };
 
+  // CSS classes for the currently selected frame style.
   const getFrameClasses = (): string => {
     switch (frame) {
       case 'scrapbook': return 'border-[4px] border-white shadow-lg';
