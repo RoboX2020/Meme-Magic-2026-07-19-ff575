@@ -1,3 +1,10 @@
+// ============================================================================
+// generate-captions.js - the serverless version of the AI endpoint (for
+// production hosting, where server.ts doesn't run). Receives the meme image
+// plus style choices from the browser, asks OpenAI's vision model to write
+// caption ideas for it, and returns the list. Keeping the OpenAI key here
+// (server-side) means visitors never see it.
+// ============================================================================
 import OpenAI from "openai";
 
 export const config = {

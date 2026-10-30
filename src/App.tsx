@@ -3,6 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// ============================================================================
+// App.tsx - Meme Magic: an AI meme maker. The flow:
+//   1. Pick a template or upload your own image.
+//   2. Press the wand: the image goes to an AI (via /api/generate-captions)
+//      which suggests funny captions in whatever style you picked.
+//   3. Style the classic top/bottom text (size, color, outline, position).
+//   4. Download or share: the meme preview (a normal web element) is
+//      snapshotted into a real PNG with html-to-image.
+// Every meme you make is auto-saved to a history reel (see the useEffect
+// below) so you can go back to earlier versions.
+// ============================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Wand2, Download, Image as ImageIcon, Loader2, RefreshCw, Eye, Trash2, History as HistoryIcon, Share2, Sparkles, MoveRight, Copy, Frame, X as XIcon, MessageCircle, Linkedin, Instagram, Link2, ArrowUpDown, Type, Megaphone } from 'lucide-react';
 import { toPng } from 'html-to-image';
@@ -339,6 +350,9 @@ export default function App() {
         console.error('Failed to compress image:', err);
       }
 
+      // Ask the AI for captions: shrink the image to a small JPEG (cheaper
+      // and faster to send), then POST it with the chosen style and length;
+      // the answer comes back as a list of caption ideas.
       const res = await fetch('/api/generate-captions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -380,6 +394,10 @@ export default function App() {
     }
   };
 
+  // Export: photograph the meme element (text + image together) into a PNG
+  // the user can download or share, and file a copy in the history reel.
+  // (Two history snapshots within 2 minutes merge into one, so dragging a
+  // slider doesn't flood the reel.)
   const handlePreview = async () => {
     if (!memeRef.current) return;
     setIsDownloading(true);

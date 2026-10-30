@@ -1,3 +1,10 @@
+// ============================================================================
+// server.ts - the app's own web server (used in development). Serves the
+// site through Vite, and hosts the /api/generate-captions endpoint that
+// talks to OpenAI. The API key is read from .dev.env.json / .env - it must
+// never be shipped to the browser, which is why the AI call lives here on
+// the server instead of in App.tsx.
+// ============================================================================
 import express from "express";
 import path from "path";
 import fs from "fs";
